@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090B12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Cofre GAC">
+<meta name="robots" content="noindex">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<title>Cofre GAC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: console-library feel. Blurred sticky header, 2-col 16:9 tiles, everything else opens as a grouped bottom sheet */
+:root{
+  --bg:#F2F3F8; --surface:#FFFFFF; --raised:#E9EBF3; --ink:#0F1220; --muted:#626A85;
+  --line:rgba(15,18,32,.09); --accent:#3B5BFF; --accent-soft:rgba(59,91,255,.12); --accent-ink:#FFFFFF;
+  --danger:#D12C46; --danger-soft:rgba(209,44,70,.1); --glass:rgba(242,243,248,.78); --shade:rgba(8,10,20,.42);
+  --display:"Sora",ui-sans-serif,system-ui,sans-serif;
+  --body:"Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r:18px;
+  --t-blue:#DBEAFE; --t-blue-ink:#1D4ED8; --t-green:#DCFCE7; --t-green-ink:#15803D;
+  --t-amber:#FEF3C7; --t-amber-ink:#B45309; --t-violet:#EDE9FE; --t-violet-ink:#6D28D9;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#090B12; --surface:#131623; --raised:#1B1F30; --ink:#EEF0F8; --muted:#8A91AC;
+  --line:rgba(255,255,255,.07); --accent:#6C8BFF; --accent-soft:rgba(108,139,255,.16); --accent-ink:#090B12;
+  --danger:#FF6B81; --danger-soft:rgba(255,107,129,.12); --glass:rgba(9,11,18,.72); --shade:rgba(0,0,0,.62); color-scheme:dark;
+  --t-blue:rgba(96,165,250,.16); --t-blue-ink:#93C5FD; --t-green:rgba(74,222,128,.14); --t-green-ink:#86EFAC;
+  --t-amber:rgba(251,191,36,.14); --t-amber-ink:#FCD34D; --t-violet:rgba(167,139,250,.17); --t-violet-ink:#C4B5FD}}
+:root[data-theme="dark"]{
+  --bg:#090B12; --surface:#131623; --raised:#1B1F30; --ink:#EEF0F8; --muted:#8A91AC;
+  --line:rgba(255,255,255,.07); --accent:#6C8BFF; --accent-soft:rgba(108,139,255,.16); --accent-ink:#090B12;
+  --danger:#FF6B81; --danger-soft:rgba(255,107,129,.12); --glass:rgba(9,11,18,.72); --shade:rgba(0,0,0,.62); color-scheme:dark;
+  --t-blue:rgba(96,165,250,.16); --t-blue-ink:#93C5FD; --t-green:rgba(74,222,128,.14); --t-green-ink:#86EFAC;
+  --t-amber:rgba(251,191,36,.14); --t-amber-ink:#FCD34D; --t-violet:rgba(167,139,250,.17); --t-violet-ink:#C4B5FD}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:780px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* Brand mark */
+.mark{width:36px;height:36px;border-radius:11px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.mark svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Lock */
+.lock{min-height:100%;display:grid;place-items:center;padding-block:40px}
+.lock-card{width:100%;max-width:340px;display:grid;gap:22px;justify-items:center;text-align:center}
+.lock .mark{width:64px;height:64px;border-radius:20px}
+.lock .mark svg{width:32px;height:32px}
+.lock h1{margin:0;font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:-.03em;line-height:1}
+.lock p{margin:0;color:var(--muted);max-width:32ch}
+.lock form{width:100%;display:grid;gap:10px}
+.pin{font-family:var(--mono);font-size:26px;letter-spacing:.5em;text-indent:.5em;text-align:center;padding:16px;border-radius:16px;border:1.5px solid var(--line);background:var(--surface);width:100%}
+.pin::placeholder{letter-spacing:normal;text-indent:0;font-family:var(--body);font-size:15px;color:var(--muted)}
+.pin:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 4px var(--accent-soft)}
+.err{color:var(--danger);font-size:14px;min-height:1.2em;margin:0}
+
+/* Buttons */
+.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:14px;padding:14px 18px;font-weight:700;font-size:15px;background:var(--raised);color:var(--ink)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.soft{background:var(--accent-soft);color:var(--accent)}
+.btn.danger{background:var(--danger-soft);color:var(--danger)}
+.btn.block{width:100%}
+.btn:active,.icon-btn:active{transform:scale(.97)}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:0;background:var(--raised);color:var(--ink);display:grid;place-items:center;flex:none}
+.icon-btn.plain{background:transparent;color:var(--muted)}
+.icon-btn.plain:hover{color:var(--ink);background:var(--raised)}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--glass);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);border-bottom:1px solid var(--line)}
+.top-in{padding-block:12px;display:grid;gap:12px}
+.top-row{display:flex;align-items:center;gap:10px}
+.top h1{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.03em;margin:0;line-height:1.1}
+.top .titles{flex:1;min-width:0;display:grid}
+.count{font-size:12.5px;color:var(--muted);font-weight:600;font-variant-numeric:tabular-nums}
+.search-box{position:relative}
+.search-box svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);width:18px;height:18px}
+.search{width:100%;padding:11px 14px 11px 42px;border-radius:999px;border:0;background:var(--raised)}
+.search:focus{outline:none;box-shadow:0 0 0 2px var(--accent)}
+.search::placeholder{color:var(--muted)}
+
+/* Shelf */
+.shelf{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding-block:16px 120px}
+@media (min-width:620px){.shelf{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.case{all:unset;cursor:pointer;display:block;position:relative;min-width:0;max-width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:var(--raised);box-shadow:0 1px 0 var(--line),0 6px 18px -10px rgba(0,0,0,.35)}
+.case:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.case img{width:100%;height:100%;object-fit:cover;display:block}
+.case::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(5,7,14,.9) 0%,rgba(5,7,14,.4) 42%,rgba(5,7,14,0) 72%)}
+.case-title{position:absolute;left:10px;right:10px;bottom:8px;z-index:1;color:#FFFFFF;font-family:var(--display);font-weight:700;font-size:12.5px;letter-spacing:-.01em;line-height:1.2;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media (prefers-reduced-motion:no-preference){.case,.btn,.icon-btn{transition:transform .14s ease}.case:active{transform:scale(.96)}}
+.ph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.02em;color:var(--accent);background:radial-gradient(120% 90% at 20% 0%,var(--accent-soft),transparent 60%),var(--raised)}
+.case .ph{padding-bottom:20px}
+
+.empty{text-align:center;padding:64px 12px;color:var(--muted);display:grid;gap:12px;justify-items:center}
+.empty .mark{width:56px;height:56px;border-radius:18px;background:var(--accent-soft);color:var(--accent)}
+.empty h2{font-family:var(--display);font-size:20px;letter-spacing:-.02em;color:var(--ink);margin:0}
+.empty p{margin:0;max-width:34ch}
+.no-hit{grid-column:1/-1;color:var(--muted);margin:8px 0}
+
+.fab{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:6;height:56px;padding:0 22px 0 18px;border-radius:18px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;box-shadow:0 12px 28px -8px rgba(40,70,255,.55)}
+.fab svg{width:22px;height:22px;stroke-width:2.4}
+
+/* Sheets */
+.sheet{position:fixed;inset:0;z-index:20;background:var(--shade);display:flex;align-items:flex-end;justify-content:center;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.sheet-panel{background:var(--bg);width:100%;max-width:540px;max-height:calc(100% - env(safe-area-inset-top,0px) - 12px);overflow-y:auto;overscroll-behavior:contain;border-radius:26px 26px 0 0;padding-top:10px;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px;align-content:start}
+.grabber{width:40px;height:5px;border-radius:3px;background:var(--line);justify-self:center;margin-bottom:-4px;background:var(--muted);opacity:.35}
+@media (prefers-reduced-motion:no-preference){.sheet-panel{animation:up .26s cubic-bezier(.2,.9,.3,1)}@keyframes up{from{transform:translateY(40px);opacity:.5}}}
+.sheet-head{display:flex;align-items:center;gap:10px}
+.sheet-head h2{margin:0;flex:1;min-width:0;font-family:var(--display);font-weight:800;font-size:20px;letter-spacing:-.02em}
+
+/* Detail */
+.banner{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:20px;overflow:hidden;background:var(--raised)}
+.banner img{width:100%;height:100%;object-fit:cover;display:block}
+.banner::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(5,7,14,.88),rgba(5,7,14,0) 60%)}
+.banner .ph{font-size:40px;padding-bottom:28px}
+.banner h3{position:absolute;left:16px;right:16px;bottom:12px;z-index:1;margin:0;color:#FFFFFF;font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.02em;line-height:1.15;text-wrap:balance;overflow-wrap:anywhere}
+.banner .close{position:absolute;top:10px;right:10px;z-index:2;background:rgba(5,7,14,.5);color:#FFFFFF;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+
+.group{background:var(--surface);border-radius:var(--r);overflow:hidden;border:1px solid var(--line)}
+.group-label{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 -8px 4px}
+.cell{display:flex;align-items:center;gap:4px;padding:8px 6px 8px 16px;min-height:58px}
+.cell + .cell,.cell + .reveal,.reveal + .cell{border-top:1px solid var(--line)}
+.cell .kv{flex:1;min-width:0;display:grid;gap:1px}
+.k{font-size:12px;font-weight:600;color:var(--muted)}
+.v{font-family:var(--mono);font-size:14.5px;overflow-wrap:anywhere;user-select:all}
+.v.empty-v{font-family:var(--body);color:var(--muted);user-select:none}
+.reveal{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:16px;font-weight:700;color:var(--accent)}
+.reveal span{flex:1}
+.reveal:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.reveal[aria-expanded="true"] svg{transform:rotate(180deg)}
+.actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+.actions .btn.danger{padding-inline:16px}
+
+/* Form */
+form{display:grid;gap:16px}
+.fgroup{background:var(--surface);border-radius:var(--r);border:1px solid var(--line);padding:6px 16px}
+.fld{display:grid;gap:2px;padding:10px 0}
+.fld + .fld{border-top:1px solid var(--line)}
+.fld label,.fld .k{font-size:12px;font-weight:600;color:var(--muted)}
+.fld input{width:100%;border:0;background:transparent;padding:4px 0;font-size:16px;font-weight:500;min-height:30px}
+.fld input:focus{outline:none}
+.fld:focus-within label{color:var(--accent)}
+.fld .with-btn{display:flex;align-items:center;gap:6px}
+.fld .with-btn input{flex:1;min-width:0}
+.fld textarea{width:100%;border:0;background:transparent;padding:4px 0;font-size:16px;font-weight:500;font-family:var(--body);line-height:1.45;min-height:84px;resize:vertical}
+.fld textarea:focus{outline:none}
+.obs-text{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px;line-height:1.5}
+.hint{font-size:12.5px;color:var(--muted);margin:2px 0 0}
+.hint.accent{color:var(--accent);font-weight:600}
+.cover-pick{display:grid;gap:10px;padding:12px 0}
+.cover-prev{position:relative;aspect-ratio:16/9;max-width:100%;border-radius:14px;overflow:hidden;background:var(--raised)}
+.cover-prev img{width:100%;height:100%;object-fit:cover;display:block}
+.cover-prev .ph{font-size:30px}
+.cover-btns{display:flex;flex-wrap:wrap;gap:8px}
+.cover-btns .btn{flex:1 1 140px;padding:11px 14px;font-size:14px}
+.paste{width:100%;border:1.5px dashed var(--line);border-color:color-mix(in srgb,var(--muted) 40%,transparent);border-radius:12px;background:transparent;padding:11px;text-align:center;font-size:13.5px;resize:none;min-height:0;caret-color:transparent;font-family:var(--body)}
+.paste:focus{outline:none;border-color:var(--accent)}
+
+/* Menu */
+.menu-list{display:grid}
+.menu-item{all:unset;cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 16px;box-sizing:border-box;width:100%}
+.menu-item + .menu-item{border-top:1px solid var(--line)}
+.menu-item .ico{width:42px;height:42px;border-radius:13px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.menu-item .ico svg{width:21px;height:21px}
+.ico.blue{background:var(--t-blue);color:var(--t-blue-ink)}
+.ico.green{background:var(--t-green);color:var(--t-green-ink)}
+.ico.amber{background:var(--t-amber);color:var(--t-amber-ink)}
+.ico.violet{background:var(--t-violet);color:var(--t-violet-ink)}
+.menu-item .txt{flex:1;min-width:0;display:grid;gap:1px}
+.menu-item b{font-weight:700}
+.menu-item span.s{font-size:13px;color:var(--muted)}
+.menu-item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.menu-item > svg.i{color:var(--muted);width:18px;height:18px}
+.stack{display:grid;gap:10px}
+.tool-in{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.tool-in:focus{outline:none;border-color:var(--accent)}
+textarea.tool-in{font-family:var(--mono);font-size:12px;min-height:140px;resize:vertical;overflow-wrap:anywhere}
+.back{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:700;font-size:14px}
+
+.confirm{position:fixed;inset:0;z-index:30;background:var(--shade);display:grid;place-items:center;padding:24px}
+.confirm-box{background:var(--surface);border-radius:24px;padding:22px;max-width:340px;width:100%;display:grid;gap:12px;text-align:center}
+.confirm-box h3{margin:0;font-family:var(--display);font-size:19px;letter-spacing:-.02em}
+.confirm-box p{margin:0 0 6px;color:var(--muted)}
+.confirm-box .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:999px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);text-align:center;box-shadow:0 10px 30px -10px rgba(0,0,0,.5)}
+</style>
+
+<!-- svg sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-pad" viewBox="0 0 24 24"><path d="M6.5 8h11a4 4 0 0 1 3.9 4.9l-.9 3.8a2.3 2.3 0 0 1-4 .9L15 16H9l-1.5 1.6a2.3 2.3 0 0 1-4-.9l-.9-3.8A4 4 0 0 1 6.5 8z"/><path d="M8 11v3M6.5 12.5h3"/><circle cx="15.5" cy="11.5" r=".6"/><circle cx="17" cy="13.5" r=".6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4 18-7z"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/></symbol>
+  <symbol id="i-in" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></symbol>
+  <symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-9 8"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 19.5l1.3-3.9A8 8 0 1 1 8.6 19z"/><path d="M9 10.5h6M9 13.5h4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7l8 6 8-6"/></symbol>
+  <symbol id="i-web" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></symbol>
+</svg>
+
+<!-- LOCK -->
+<section id="lock" class="lock wrap">
+  <div class="lock-card">
+    <div class="mark"><svg><use href="#i-pad"/></svg></div>
+    <h1>Cofre GAC</h1>
+    <p id="lockMsg">Carregando…</p>
+    <form id="lockForm" autocomplete="off">
+      <input id="pin1" class="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" aria-label="PIN">
+      <input id="pin2" class="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="Repita o PIN" aria-label="Repita o PIN" hidden>
+      <p id="lockErr" class="err" role="alert"></p>
+      <button id="lockBtn" class="btn primary block" type="submit">Desbloquear</button>
+    </form>
+  </div>
+</section>
+
+<!-- MAIN -->
+<section id="main" hidden>
+  <header class="top">
+    <div class="top-in wrap">
+      <div class="top-row">
+        <div class="mark"><svg><use href="#i-pad"/></svg></div>
+        <div class="titles"><h1>Cofre GAC</h1><span id="count" class="count"></span></div>
+        <button id="menuBtn" class="icon-btn" aria-label="Backup e segurança"><svg class="i"><use href="#i-more"/></svg></button>
+        <button id="lockNow" class="icon-btn" aria-label="Bloquear"><svg class="i"><use href="#i-lock"/></svg></button>
+      </div>
+      <div class="search-box"><svg class="i"><use href="#i-search"/></svg><input id="search" class="search" type="search" placeholder="Buscar jogo" aria-label="Buscar jogo"></div>
+    </div>
+  </header>
+  <div class="wrap">
+    <div id="shelf" class="shelf"></div>
+    <div id="empty" class="empty" hidden>
+      <div class="mark"><svg><use href="#i-pad"/></svg></div>
+      <h2>Comece sua coleção</h2>
+      <p>Toque em Adicionar para guardar a primeira conta com a capa do jogo, login e senha.</p>
+    </div>
+  </div>
+  <button id="addBtn" class="fab"><svg class="i"><use href="#i-plus"/></svg>Adicionar</button>
+</section>
+
+<!-- DETAIL -->
+<div id="detail" class="sheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <div class="grabber"></div>
+    <div class="banner" id="dBanner">
+      <div id="dCover"></div>
+      <h3 id="dTitle"></h3>
+      <button class="icon-btn close" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="group">
+      <div class="cell"><div class="kv"><span class="k">Login</span><span id="dLogin" class="v"></span></div>
+        <button class="icon-btn plain" data-copy="login" aria-label="Copiar login"><svg class="i"><use href="#i-copy"/></svg></button></div>
+      <div class="cell"><div class="kv"><span class="k">Senha</span><span id="dPass" class="v"></span></div>
+        <button class="icon-btn plain" id="dPassToggle" aria-label="Mostrar senha"><svg class="i"><use href="#i-eye"/></svg></button>
+        <button class="icon-btn plain" data-copy="senha" aria-label="Copiar senha"><svg class="i"><use href="#i-copy"/></svg></button></div>
+      <button id="dDetailsBtn" class="reveal" aria-expanded="false" aria-controls="dDetails"><span>Detalhes da criação</span><svg class="i"><use href="#i-down"/></svg></button>
+      <div id="dDetails" hidden>
+        <div class="cell" style="border-top:1px solid var(--line)"><div class="kv"><span class="k">E-mail</span><span id="dEmail" class="v"></span></div>
+          <button class="icon-btn plain" data-copy="email" aria-label="Copiar e-mail"><svg class="i"><use href="#i-copy"/></svg></button></div>
+        <div class="cell"><div class="kv"><span class="k">Data de nascimento</span><span id="dNasc" class="v"></span></div>
+          <button class="icon-btn plain" data-copy="nascFmt" aria-label="Copiar data"><svg class="i"><use href="#i-copy"/></svg></button></div>
+        <div class="cell"><div class="kv"><span class="k">CEP</span><span id="dCep" class="v"></span></div>
+          <button class="icon-btn plain" data-copy="cep" aria-label="Copiar CEP"><svg class="i"><use href="#i-copy"/></svg></button></div>
+      </div>
+    </div>
+    <div id="dObsWrap" class="group" hidden>
+      <div class="cell" style="padding-right:16px;padding-block:12px"><div class="kv"><span class="k">Observações</span><p id="dObs" class="obs-text"></p></div></div>
+    </div>
+    <div class="actions">
+      <button id="dEdit" class="btn primary"><svg class="i"><use href="#i-edit"/></svg>Editar</button>
+      <button id="dDelete" class="btn danger" aria-label="Excluir conta"><svg class="i"><use href="#i-trash"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="formSheet" class="sheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="fHead">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h2 id="fHead">Nova conta</h2>
+      <button class="icon-btn" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <form id="form" autocomplete="off">
+      <p class="group-label">Jogo</p>
+      <div class="fgroup">
+        <div class="fld"><label for="fTitle">Título do jogo</label><input id="fTitle" required maxlength="120" placeholder="Gran Turismo 7"></div>
+        <div class="fld cover-pick">
+          <span class="k">Capa</span>
+          <div class="cover-prev" id="fCover"></div>
+          <div class="cover-btns">
+            <a id="fSearch" class="btn soft" href="#" target="_blank" rel="noopener" hidden><svg class="i"><use href="#i-web"/></svg>Buscar capa</a>
+            <label class="btn" for="fImg"><svg class="i"><use href="#i-img"/></svg>Galeria</label>
+            <button id="fImgRemove" type="button" class="btn danger" hidden>Remover</button>
+          </div>
+          <input id="fImg" type="file" accept="image/*" hidden>
+          <textarea id="fPaste" class="paste" rows="1" aria-label="Colar imagem" placeholder="Copiou a imagem? Toque e segure aqui e escolha Colar"></textarea>
+        </div>
+      </div>
+
+      <p class="group-label">Acesso</p>
+      <div class="fgroup">
+        <div class="fld"><label for="fLogin">Login</label><input id="fLogin" autocapitalize="off" spellcheck="false" placeholder="email@exemplo.com"></div>
+        <div class="fld"><label for="fSenha">Senha</label>
+          <div class="with-btn"><input id="fSenha" type="password" autocapitalize="off" spellcheck="false" autocomplete="new-password">
+          <button type="button" id="fSenhaToggle" class="icon-btn plain" aria-label="Mostrar senha"><svg class="i"><use href="#i-eye"/></svg></button></div></div>
+      </div>
+
+      <p class="group-label">Dados da criação</p>
+      <div class="fgroup">
+        <div class="fld"><label for="fEmail">E-mail</label><input id="fEmail" type="email" inputmode="email" autocapitalize="off" spellcheck="false" aria-describedby="fEmailHint">
+          <p id="fEmailHint" class="hint">Igual ao login. Altere se for outro.</p></div>
+        <div class="fld"><label for="fNasc">Data de nascimento</label><input id="fNasc" type="date" aria-describedby="fNascHint">
+          <p id="fNascHint" class="hint accent" hidden>Preenchida com a última data usada</p></div>
+        <div class="fld"><label for="fCep">CEP</label><input id="fCep" inputmode="numeric" maxlength="9" placeholder="00000-000"></div>
+      </div>
+
+      <p class="group-label">Observações</p>
+      <div class="fgroup">
+        <div class="fld"><textarea id="fObs" maxlength="2000" aria-label="Observações"></textarea></div>
+      </div>
+      <p id="fErr" class="err" role="alert"></p>
+      <button class="btn primary block" type="submit">Salvar conta</button>
+    </form>
+  </div>
+</div>
+
+<!-- MENU / TOOLS -->
+<div id="menuSheet" class="sheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="mHead">
+    <div class="grabber"></div>
+    <div class="sheet-head">
+      <h2 id="mHead">Backup e segurança</h2>
+      <button class="icon-btn" data-close aria-label="Fechar"><svg class="i"><use href="#i-x"/></svg></button>
+    </div>
+    <div id="mList" class="group menu-list">
+      <button class="menu-item" data-tool="send"><span class="ico green"><svg class="i"><use href="#i-send"/></svg></span><span class="txt"><b>Enviar backup</b><span class="s">Pelo WhatsApp ou Gmail, sem as capas</span></span><svg class="i"><use href="#i-right"/></svg></button>
+      <button class="menu-item" data-tool="export"><span class="ico blue"><svg class="i"><use href="#i-clip"/></svg></span><span class="txt"><b>Copiar backup completo</b><span class="s">Com as capas, para colar no Notas</span></span><svg class="i"><use href="#i-right"/></svg></button>
+      <button class="menu-item" data-tool="import"><span class="ico amber"><svg class="i"><use href="#i-in"/></svg></span><span class="txt"><b>Importar backup</b><span class="s">Junta com as contas atuais</span></span><svg class="i"><use href="#i-right"/></svg></button>
+      <button class="menu-item" data-tool="pin"><span class="ico violet"><svg class="i"><use href="#i-key"/></svg></span><span class="txt"><b>Trocar PIN</b><span class="s">Recriptografa o cofre</span></span><svg class="i"><use href="#i-right"/></svg></button>
+    </div>
+    <button id="mBack" class="back" hidden><svg class="i"><use href="#i-left"/></svg>Voltar</button>
+    <div id="tSend" class="stack" hidden>
+      <p class="hint">O texto vai criptografado e só abre com o PIN atual. Mande para você mesmo. As capas não vão junto; depois de restaurar, escolha as imagens de novo.</p>
+      <p id="sendStatus" class="hint accent">Preparando backup…</p>
+      <a id="sendWa" class="btn primary block" href="#" target="_blank" rel="noopener"><svg class="i"><use href="#i-chat"/></svg>Enviar pelo WhatsApp</a>
+      <a id="sendGmail" class="btn soft block" href="#" target="_blank" rel="noopener"><svg class="i"><use href="#i-mail"/></svg>Enviar pelo Gmail</a>
+      <button id="sendCopy" class="btn block" type="button"><svg class="i"><use href="#i-copy"/></svg>Copiar texto</button>
+    </div>
+    <div id="tExport" class="stack" hidden>
+      <p class="hint">Guarde este texto num lugar seguro, como o Notas. Ele só abre com o PIN atual.</p>
+      <textarea id="exportText" class="tool-in" readonly aria-label="Backup"></textarea>
+      <button id="exportCopy" class="btn primary block"><svg class="i"><use href="#i-copy"/></svg>Copiar backup completo</button>
+    </div>
+    <form id="tImport" class="stack" hidden>
+      <textarea id="importText" class="tool-in" placeholder="Cole aqui a mensagem do backup" aria-label="Texto do backup"></textarea>
+      <label class="btn block" for="importFile"><svg class="i"><use href="#i-in"/></svg>Escolher arquivo .txt</label>
+      <input id="importFile" type="file" accept=".txt,text/plain" hidden>
+      <input id="importPin" class="tool-in" type="password" inputmode="numeric" placeholder="PIN do backup" aria-label="PIN do backup">
+      <p id="importErr" class="err" role="alert"></p>
+      <button class="btn primary block" type="submit">Importar</button>
+    </form>
+    <form id="tPin" class="stack" hidden>
+      <input id="pinOld" class="tool-in" type="password" inputmode="numeric" placeholder="PIN atual" aria-label="PIN atual">
+      <input id="pinNew" class="tool-in" type="password" inputmode="numeric" placeholder="Novo PIN" aria-label="Novo PIN">
+      <input id="pinNew2" class="tool-in" type="password" inputmode="numeric" placeholder="Repita o novo PIN" aria-label="Repita o novo PIN">
+      <p id="pinErr" class="err" role="alert"></p>
+      <button class="btn primary block" type="submit"><svg class="i"><use href="#i-key"/></svg>Trocar PIN</button>
+    </form>
+  </div>
+</div>
+
+<div id="confirm" class="confirm" hidden>
+  <div class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="cTitle">
+    <h3 id="cTitle">Excluir conta?</h3>
+    <p id="cText"></p>
+    <div class="row">
+      <button id="cNo" class="btn">Cancelar</button>
+      <button id="cYes" class="btn danger">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const KEY = 'cofrepsn.v1';
+const ITER = 250000;
+const LOCK_AFTER_MS = 2 * 60 * 1000;
+const APP = 'Cofre GAC';
+const te = new TextEncoder(), td = new TextDecoder();
+
+let cryptoKey = null, salt = null, data = null, currentId = null, editImg = null, hiddenAt = 0;
+
+// ---------- storage ----------
+function readStore(){ try{ const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; }catch(e){ return null; } }
+function writeStore(obj){ localStorage.setItem(KEY, JSON.stringify(obj)); }
+
+// ---------- crypto ----------
+const b64 = buf => { const b = new Uint8Array(buf); let s=''; for(let i=0;i<b.length;i+=0x8000) s += String.fromCharCode.apply(null, b.subarray(i,i+0x8000)); return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function derive(pin, saltBytes, iter){
+  const base = await crypto.subtle.importKey('raw', te.encode(pin), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2', salt:saltBytes, iterations:iter, hash:'SHA-256'}, base, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+}
+async function seal(key, obj){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, te.encode(JSON.stringify(obj)));
+  return { iv: b64(iv), ct: b64(ct) };
+}
+async function open(key, box){
+  const pt = await crypto.subtle.decrypt({name:'AES-GCM', iv: unb64(box.iv)}, key, unb64(box.ct));
+  return JSON.parse(td.decode(pt));
+}
+async function persist(){
+  const box = await seal(cryptoKey, data);
+  writeStore({ v:1, iter:ITER, salt:b64(salt), ...box });
+}
+async function save(){
+  try{ await persist(); return true; }
+  catch(e){ toast('Não foi possível salvar: o espaço do navegador acabou. Use imagens menores ou exclua contas antigas.', 5000); return false; }
+}
+function normalize(){
+  if(!Array.isArray(data.items)) data.items = [];
+  if(!data.prefs || typeof data.prefs !== 'object') data.prefs = {};
+  if(!data.prefs.nasc){
+    const last = data.items.filter(i => i.nasc).sort((a,b) => (b.updated||0) - (a.updated||0))[0];
+    if(last) data.prefs.nasc = last.nasc;
+  }
+}
+
+// ---------- lock screen ----------
+let lockMode = 'unlock';
+function showLock(){
+  cryptoKey = null; data = null; currentId = null;
+  closeAll();
+  $('main').hidden = true; $('lock').hidden = false;
+  $('pin1').value = ''; $('pin2').value = ''; $('lockErr').textContent = '';
+  if(!window.crypto || !crypto.subtle){
+    $('lockMsg').textContent = 'Este navegador não oferece criptografia. Abra o app em um navegador atualizado.';
+    $('lockForm').hidden = true; return;
+  }
+  const st = readStore();
+  lockMode = st ? 'unlock' : 'create';
+  $('pin2').hidden = lockMode === 'unlock';
+  $('lockMsg').textContent = lockMode === 'create'
+    ? 'Crie um PIN de pelo menos 4 dígitos. Ele protege tudo com criptografia e não tem recuperação.'
+    : 'Digite seu PIN para abrir o cofre.';
+  $('lockBtn').textContent = lockMode === 'create' ? 'Criar cofre' : 'Desbloquear';
+  setTimeout(() => $('pin1').focus(), 50);
+}
+$('lockForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const p1 = $('pin1').value, err = $('lockErr');
+  err.textContent = '';
+  if(p1.length < 4){ err.textContent = 'O PIN precisa ter pelo menos 4 caracteres.'; return; }
+  $('lockBtn').disabled = true;
+  try{
+    if(lockMode === 'create'){
+      if(p1 !== $('pin2').value){ err.textContent = 'Os dois PINs não são iguais.'; return; }
+      salt = crypto.getRandomValues(new Uint8Array(16));
+      cryptoKey = await derive(p1, salt, ITER);
+      data = { items: [], prefs: {} };
+      try{ await persist(); }catch(x){ err.textContent = 'O navegador bloqueou o armazenamento local. Saia da aba anônima e tente de novo.'; cryptoKey=null; return; }
+    } else {
+      const st = readStore();
+      salt = unb64(st.salt);
+      const key = await derive(p1, salt, st.iter || ITER);
+      try{ data = await open(key, st); }catch(x){ err.textContent = 'PIN incorreto.'; $('pin1').select(); return; }
+      cryptoKey = key;
+    }
+    normalize();
+    $('lock').hidden = true; $('main').hidden = false;
+    render();
+  } finally { $('lockBtn').disabled = false; }
+});
+$('lockNow').onclick = showLock;
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) hiddenAt = Date.now();
+  else if(cryptoKey && hiddenAt && Date.now() - hiddenAt > LOCK_AFTER_MS) showLock();
+});
+
+// ---------- helpers ----------
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const initials = t => (t||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const fmtDate = iso => { if(!iso) return ''; const [y,m,d] = iso.split('-'); return d && m && y ? `${d}/${m}/${y}` : iso; };
+const fmtCep = v => { const d = String(v||'').replace(/\D/g,'').slice(0,8); return d.length > 5 ? d.slice(0,5)+'-'+d.slice(5) : d; };
+function coverHTML(it){ return it && it.img ? `<img src="${it.img}" alt="">` : `<div class="ph">${esc(initials(it && it.title))}</div>`; }
+let toastT;
+function toast(msg, ms=1800){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, ms); }
+function closeAll(){ ['detail','formSheet','menuSheet','confirm'].forEach(id => $(id).hidden = true); }
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.sheet').hidden = true);
+document.querySelectorAll('.sheet').forEach(s => s.addEventListener('click', e => { if(e.target === s) s.hidden = true; }));
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ if(!$('confirm').hidden) $('confirm').hidden = true; else closeAll(); } });
+
+// ---------- main list ----------
+function render(){
+  const q = $('search').value.trim().toLowerCase();
+  const items = data.items.slice().sort((a,b) => a.title.localeCompare(b.title, 'pt-BR'));
+  const shown = q ? items.filter(i => i.title.toLowerCase().includes(q)) : items;
+  const n = data.items.length;
+  $('count').textContent = n ? `${n} ${n === 1 ? 'conta guardada' : 'contas guardadas'}` : 'Nenhuma conta ainda';
+  $('empty').hidden = n > 0;
+  $('shelf').innerHTML = shown.map(it =>
+    `<button class="case" data-id="${it.id}" aria-label="${esc(it.title)}">${coverHTML(it)}<span class="case-title">${esc(it.title)}</span></button>`).join('')
+    || (n ? `<p class="no-hit">Nenhum jogo encontrado para “${esc(q)}”.</p>` : '');
+}
+$('search').addEventListener('input', render);
+$('shelf').addEventListener('click', e => { const c = e.target.closest('.case'); if(c) openDetail(c.dataset.id); });
+
+// ---------- detail ----------
+let passShown = false;
+function setVal(el, v){ el.textContent = v || 'não informado'; el.classList.toggle('empty-v', !v); }
+function setReveal(open){
+  $('dDetails').hidden = !open;
+  $('dDetailsBtn').setAttribute('aria-expanded', String(open));
+  $('dDetailsBtn').querySelector('span').textContent = open ? 'Ocultar detalhes da criação' : 'Detalhes da criação';
+}
+function openDetail(id){
+  const it = data.items.find(i => i.id === id); if(!it) return;
+  currentId = id; passShown = false;
+  $('dCover').innerHTML = coverHTML(it);
+  $('dTitle').textContent = it.title;
+  setVal($('dLogin'), it.login);
+  renderPass(it);
+  setVal($('dEmail'), it.email);
+  setVal($('dNasc'), fmtDate(it.nasc));
+  setVal($('dCep'), it.cep);
+  $('dObs').textContent = it.obs || '';
+  $('dObsWrap').hidden = !it.obs;
+  setReveal(false);
+  $('detail').hidden = false;
+}
+function renderPass(it){
+  const el = $('dPass');
+  if(!it.senha){ setVal(el, ''); return; }
+  el.classList.remove('empty-v');
+  el.textContent = passShown ? it.senha : '•'.repeat(Math.min(12, Math.max(8, it.senha.length)));
+  $('dPassToggle').setAttribute('aria-label', passShown ? 'Ocultar senha' : 'Mostrar senha');
+}
+$('dPassToggle').onclick = () => { passShown = !passShown; renderPass(data.items.find(i => i.id === currentId)); };
+$('dDetailsBtn').onclick = () => setReveal($('dDetails').hidden);
+document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => {
+  const it = data.items.find(i => i.id === currentId); if(!it) return;
+  const k = b.dataset.copy;
+  const v = k === 'nascFmt' ? fmtDate(it.nasc) : it[k];
+  if(!v){ toast('Campo vazio'); return; }
+  try{ navigator.clipboard.writeText(v).then(() => toast('Copiado'), () => toast('Toque e segure no texto para copiar')); }
+  catch(e){ toast('Toque e segure no texto para copiar'); }
+});
+$('dEdit').onclick = () => { const it = data.items.find(i => i.id === currentId); $('detail').hidden = true; openForm(it); };
+$('dDelete').onclick = () => {
+  const it = data.items.find(i => i.id === currentId); if(!it) return;
+  $('cText').textContent = `“${it.title}” e todos os dados desta conta serão apagados deste aparelho.`;
+  $('confirm').hidden = false; $('cNo').focus();
+};
+$('cNo').onclick = () => $('confirm').hidden = true;
+$('cYes').onclick = async () => {
+  const prev = data.items;
+  data.items = data.items.filter(i => i.id !== currentId);
+  if(!(await save())){ data.items = prev; return; }
+  $('confirm').hidden = true; $('detail').hidden = true; currentId = null;
+  render(); toast('Conta excluída');
+};
+
+// ---------- form ----------
+let editingId = null, emailSynced = true;
+function openForm(it){
+  editingId = it ? it.id : null;
+  $('fHead').textContent = it ? 'Editar conta' : 'Nova conta';
+  $('fTitle').value = it?.title || '';
+  $('fLogin').value = it?.login || '';
+  $('fSenha').value = it?.senha || ''; $('fSenha').type = 'password';
+  $('fEmail').value = it?.email || '';
+  const remembered = !it && data.prefs.nasc;
+  $('fNasc').value = it ? (it.nasc || '') : (data.prefs.nasc || '');
+  $('fNascHint').hidden = !remembered;
+  $('fCep').value = it?.cep || '';
+  $('fObs').value = it?.obs || '';
+  $('fErr').textContent = '';
+  emailSynced = !it || !it.email || it.email === it.login;
+  updateEmailHint();
+  editImg = it?.img || null;
+  paintFormCover();
+  updateSearch();
+  $('formSheet').hidden = false;
+  $('formSheet').querySelector('.sheet-panel').scrollTop = 0;
+  setTimeout(() => $('fTitle').focus(), 60);
+}
+function paintFormCover(){
+  $('fCover').innerHTML = coverHTML({ img: editImg, title: $('fTitle').value || '+' });
+  $('fImgRemove').hidden = !editImg;
+}
+function updateSearch(){
+  const t = $('fTitle').value.trim(), a = $('fSearch');
+  a.hidden = !t;
+  a.href = 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(t + ' capa jogo PS5 PS4');
+}
+function updateEmailHint(){ $('fEmailHint').hidden = !(emailSynced && $('fLogin').value.trim()); }
+$('fTitle').addEventListener('input', () => { if(!editImg) paintFormCover(); updateSearch(); });
+$('fLogin').addEventListener('input', () => { if(emailSynced) $('fEmail').value = $('fLogin').value.trim(); updateEmailHint(); });
+$('fEmail').addEventListener('input', () => { emailSynced = $('fEmail').value.trim() === $('fLogin').value.trim(); updateEmailHint(); });
+$('fNasc').addEventListener('input', () => { $('fNascHint').hidden = true; });
+$('fPaste').addEventListener('paste', async e => {
+  e.preventDefault();
+  const items = [...(e.clipboardData?.items || [])];
+  const imgItem = items.find(i => i.kind === 'file' && i.type.startsWith('image/'));
+  const file = imgItem ? imgItem.getAsFile() : (e.clipboardData?.files || [])[0];
+  if(file && file.type.startsWith('image/')){
+    try{ editImg = await shrink(file); paintFormCover(); toast('Capa colada'); }
+    catch(x){ toast('Não foi possível ler essa imagem. Tente outra.'); }
+  } else {
+    toast('Isso é um link, não a imagem. Na busca, toque e segure na imagem e escolha Copiar.', 4200);
+  }
+  $('fPaste').value = ''; $('fPaste').blur();
+});
+$('fPaste').addEventListener('input', () => { $('fPaste').value = ''; });
+$('addBtn').onclick = () => openForm(null);
+$('fSenhaToggle').onclick = () => { const i = $('fSenha'); i.type = i.type === 'password' ? 'text' : 'password'; $('fSenhaToggle').setAttribute('aria-label', i.type === 'password' ? 'Mostrar senha' : 'Ocultar senha'); };
+$('fCep').addEventListener('input', e => { e.target.value = fmtCep(e.target.value); });
+$('fImgRemove').onclick = () => { editImg = null; paintFormCover(); };
+$('fImg').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if(!f) return;
+  try{ editImg = await shrink(f); paintFormCover(); }
+  catch(x){ toast('Não foi possível ler essa imagem. Tente outra.'); }
+});
+function shrink(file){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const max = 560, s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.78));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(); };
+    img.src = url;
+  });
+}
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const title = $('fTitle').value.trim();
+  if(!title){ $('fErr').textContent = 'Informe o título do jogo.'; $('fTitle').focus(); return; }
+  const cep = $('fCep').value.trim();
+  if(cep && cep.replace(/\D/g,'').length !== 8){ $('fErr').textContent = 'O CEP precisa ter 8 dígitos (00000-000).'; $('fCep').focus(); return; }
+  const rec = {
+    title, img: editImg,
+    login: $('fLogin').value.trim(), senha: $('fSenha').value,
+    email: $('fEmail').value.trim(), nasc: $('fNasc').value, cep,
+    obs: $('fObs').value.trim(),
+    updated: Date.now()
+  };
+  const prevItems = data.items, prevNasc = data.prefs.nasc;
+  if(editingId){ data.items = data.items.map(i => i.id === editingId ? { ...i, ...rec } : i); }
+  else { data.items = [...data.items, { id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random(), created: Date.now(), ...rec }]; }
+  if(rec.nasc) data.prefs.nasc = rec.nasc;
+  if(!(await save())){ data.items = prevItems; data.prefs.nasc = prevNasc; return; }
+  $('formSheet').hidden = true;
+  render();
+  toast(editingId ? 'Alterações salvas' : 'Conta adicionada');
+  if(editingId) openDetail(editingId);
+});
+
+// ---------- menu: backup / pin ----------
+async function deflate(bytes){
+  if(!('CompressionStream' in window)) return null;
+  try{ return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); }catch(e){ return null; }
+}
+async function inflate(bytes){
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+}
+async function makeBackup(full){
+  const items = full ? data.items : data.items.map(({img, ...rest}) => rest);
+  const raw = te.encode(JSON.stringify({ items, prefs: data.prefs }));
+  const packed = await deflate(raw);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv}, cryptoKey, packed || raw);
+  return `COFREPSN2.${ITER}.${packed ? 1 : 0}.${b64(salt)}.${b64(iv)}.${b64(ct)}`;
+}
+async function readBackup(text, pin){
+  const t = text.replace(/\s+/g, '');
+  if(t.startsWith('COFREPSN2.')){
+    const [, iter, z, s, iv, ct] = t.split('.');
+    if(!ct) throw 'formato';
+    const key = await derive(pin, unb64(s), Number(iter) || ITER);
+    let bytes;
+    try{ bytes = new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM', iv: unb64(iv)}, key, unb64(ct))); }catch(e){ throw 'pin'; }
+    if(z === '1') bytes = await inflate(bytes);
+    return JSON.parse(td.decode(bytes));
+  }
+  if(t.startsWith('COFREPSN1:')){
+    let st; try{ st = JSON.parse(atob(t.slice(10))); }catch(e){ throw 'formato'; }
+    const key = await derive(pin, unb64(st.salt), st.iter || ITER);
+    try{ return await open(key, st); }catch(e){ throw 'pin'; }
+  }
+  throw 'formato';
+}
+const today = () => new Date().toLocaleDateString('pt-BR');
+let sendText = '';
+async function prepareSend(){
+  const wa = $('sendWa'), gm = $('sendGmail'), status = $('sendStatus');
+  [wa, gm].forEach(a => a.setAttribute('href', '#'));
+  status.textContent = 'Preparando backup…';
+  const code = await makeBackup(false);
+  sendText = `Backup do ${APP} (${today()}). Para restaurar, abra o ${APP}, toque em ⋯ e depois em Importar backup.\n\n${code}`;
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent('Backup ' + APP + ' ' + today())}&body=${encodeURIComponent(sendText)}`;
+  wa.href = 'https://wa.me/?text=' + encodeURIComponent(sendText);
+  gm.href = gmailUrl;
+  const n = data.items.length;
+  status.textContent = `${n} ${n === 1 ? 'conta' : 'contas'} no backup.` + (gmailUrl.length > 7500 ? ' Ficou longo para o Gmail; se não abrir, use o WhatsApp ou Copiar texto.' : '');
+}
+['sendWa','sendGmail'].forEach(id => $(id).addEventListener('click', e => { if($(id).getAttribute('href') === '#') e.preventDefault(); }));
+$('sendCopy').onclick = () => {
+  if(!sendText){ toast('Aguarde o backup ficar pronto'); return; }
+  try{ navigator.clipboard.writeText(sendText).then(() => toast('Backup copiado'), () => toast('Não foi possível copiar. Use o WhatsApp ou o Gmail.')); }
+  catch(e){ toast('Não foi possível copiar. Use o WhatsApp ou o Gmail.'); }
+};
+const titles = { send:'Enviar backup', export:'Backup completo', import:'Importar backup', pin:'Trocar PIN' };
+function showTool(name){
+  $('mList').hidden = !!name;
+  $('mBack').hidden = !name;
+  $('mHead').textContent = name ? titles[name] : 'Backup e segurança';
+  $('tSend').hidden = name !== 'send';
+  $('tExport').hidden = name !== 'export';
+  $('tImport').hidden = name !== 'import';
+  $('tPin').hidden = name !== 'pin';
+}
+$('mBack').onclick = () => showTool(null);
+$('menuBtn').onclick = () => { showTool(null); $('menuSheet').hidden = false; };
+document.querySelectorAll('[data-tool]').forEach(b => b.onclick = async () => {
+  const t = b.dataset.tool; showTool(t);
+  if(t === 'send'){ sendText = ''; prepareSend().catch(() => { $('sendStatus').textContent = 'Não foi possível gerar o backup. Feche e tente de novo.'; }); }
+  if(t === 'export'){ $('exportText').value = 'Gerando…'; $('exportText').value = await makeBackup(true); }
+  if(t === 'import'){ $('importText').value=''; $('importPin').value=''; $('importErr').textContent=''; }
+  if(t === 'pin'){ ['pinOld','pinNew','pinNew2'].forEach(i => $(i).value=''); $('pinErr').textContent=''; }
+});
+$('exportCopy').onclick = () => {
+  const ta = $('exportText');
+  try{ navigator.clipboard.writeText(ta.value).then(() => toast('Backup copiado'), () => { ta.select(); toast('Texto selecionado. Use Copiar.'); }); }
+  catch(e){ ta.select(); toast('Texto selecionado. Use Copiar.'); }
+};
+$('importFile').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value=''; if(!f) return;
+  const r = new FileReader(); r.onload = () => $('importText').value = String(r.result).trim(); r.readAsText(f);
+});
+$('tImport').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = $('importErr'); err.textContent = '';
+  const m = $('importText').value.match(/COFREPSN(?:2\.[\s\S]+|1:[\s\S]+)/);
+  if(!m){ err.textContent = `Esse texto não é um backup do ${APP}. Cole a mensagem inteira.`; return; }
+  let incoming;
+  try{ incoming = await readBackup(m[0], $('importPin').value); }
+  catch(x){ err.textContent = x === 'pin' ? 'PIN do backup incorreto.' : 'O backup está incompleto. Copie a mensagem inteira e tente de novo.'; return; }
+  const map = new Map(data.items.map(i => [i.id, i]));
+  let added = 0, updated = 0;
+  (incoming.items || []).forEach(i => {
+    const cur = map.get(i.id);
+    if(cur){
+      if((i.updated||0) > (cur.updated||0)){ map.set(i.id, { ...cur, ...i, img: i.img || cur.img }); updated++; }
+      else if(!cur.img && i.img){ map.set(i.id, { ...cur, img: i.img }); }
+    } else { map.set(i.id, i); added++; }
+  });
+  const prev = data.items, prevNasc = data.prefs.nasc;
+  data.items = [...map.values()];
+  if(!data.prefs.nasc && incoming.prefs?.nasc) data.prefs.nasc = incoming.prefs.nasc;
+  normalize();
+  if(!(await save())){ data.items = prev; data.prefs.nasc = prevNasc; return; }
+  render(); $('menuSheet').hidden = true;
+  toast(`${added} adicionada(s), ${updated} atualizada(s)`, 2600);
+});
+$('tPin').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = $('pinErr'); err.textContent = '';
+  const st = readStore();
+  try{ await open(await derive($('pinOld').value, unb64(st.salt), st.iter || ITER), st); }
+  catch(x){ err.textContent = 'PIN atual incorreto.'; return; }
+  const n = $('pinNew').value;
+  if(n.length < 4){ err.textContent = 'O novo PIN precisa ter pelo menos 4 caracteres.'; return; }
+  if(n !== $('pinNew2').value){ err.textContent = 'Os novos PINs não são iguais.'; return; }
+  const oldKey = cryptoKey, oldSalt = salt;
+  salt = crypto.getRandomValues(new Uint8Array(16));
+  cryptoKey = await derive(n, salt, ITER);
+  if(!(await save())){ cryptoKey = oldKey; salt = oldSalt; return; }
+  $('menuSheet').hidden = true; toast('PIN trocado');
+});
+
+showLock();
+})();
+</script>
+
+</body>
+</html>
